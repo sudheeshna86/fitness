@@ -1,0 +1,51 @@
+import { Workout } from '@/src/types';
+
+export const mockWorkouts: Workout[] = [
+  {
+    id: 'w1',
+    title: 'Advanced Hybrid Power & Flow',
+    trainer: 'Featured Masterclass',
+    category: 'Strength',
+    difficulty: 'Elite',
+    duration: 45,
+    calories: 520,
+    image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=800&auto=format&fit=crop',
+    isFeatured: true,
+    description: 'A high-intensity blend of explosive power movements and functional mobility flow.',
+    movements: [
+      { id: 'm1', name: 'Goblet Squats', sets: 3, reps: 12, image: 'https://images.unsplash.com/photo-1566241440091-ec10de8db2e1?q=80&w=200&auto=format&fit=crop' },
+      { id: 'm2', name: 'Jumping Lunges', sets: 3, reps: 10, image: 'https://images.unsplash.com/photo-1434682772747-f16d3ea162c3?q=80&w=200&auto=format&fit=crop' },
+      { id: 'm3', name: 'Kettlebell Swings', sets: 4, reps: 15, image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=200&auto=format&fit=crop' },
+    ],
+  },
+  {
+    id: 'w2',
+    title: 'Zen Strength Fusion',
+    trainer: 'Sarah Jenkins',
+    category: 'Yoga',
+    difficulty: 'Elite',
+    duration: 30,
+    calories: 280,
+    image: 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800&auto=format&fit=crop',
+  },
+  {
+    id: 'w3',
+    title: 'Endurance Sprint Elite',
+    trainer: 'Alex Rivera',
+    category: 'HIIT',
+    difficulty: 'Elite',
+    duration: 40,
+    calories: 600,
+    image: 'https://images.unsplash.com/photo-1538805060514-97d9cc17730c?q=80&w=800&auto=format&fit=crop',
+  },
+  {
+    id: 'w4',
+    title: 'Core & Mobility Flow',
+    trainer: 'Emma Chen',
+    category: 'Recovery',
+    difficulty: 'Basic',
+    duration: 15,
+    calories: 120,
+    image: 'https://images.unsplash.com/photo-1518611012118-2969c63b07b7?q=80&w=800&auto=format&fit=crop',
+  },
+];
