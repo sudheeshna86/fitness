@@ -1,10 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Animated } from 'react-native';
 import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ArrowLeft, Clock, Flame, Dumbbell, Heart, Zap, MoreVertical } from 'lucide-react-native';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { fetchWorkoutById, completeWorkout } from '@/src/services/api/workouts';
+import Constants from 'expo-constants';
 import { Workout } from '@/src/types';
 import { Colors } from '@/src/constants/theme';
 
@@ -13,12 +16,24 @@ export function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams();
   const [workout, setWorkout] = useState<Workout | undefined>();
   const [completing, setCompleting] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
 
   useEffect(() => {
     if (typeof id === 'string') {
       fetchWorkoutById(id).then(setWorkout);
     }
   }, [id]);
+
+  useEffect(() => {
+    if (workout) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [workout]);
 
   const handleComplete = async () => {
     if (typeof id !== 'string') return;
@@ -41,10 +56,36 @@ export function WorkoutDetailScreen() {
     );
   }
 
+  // Helper to get correct image URL
+  const getImageUrl = (url?: string) => {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    // Use backend URL from env or fallback
+    const backendUrl = Constants.expoConfig?.extra?.apiUrl?.replace(/\/api$/, '') || 'http://localhost:4000';
+    if (url.startsWith('/')) return backendUrl + url;
+    return backendUrl + '/uploads/' + url;
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.hero}>
-        <Image source={{ uri: workout.thumbnail }} style={styles.heroImage} />
+        {imageError || !workout.thumbnail ? (
+          <View style={[styles.heroImage, styles.heroImageFallback]}>
+            <Text style={styles.heroImageFallbackText}>No Image</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: getImageUrl(workout.thumbnail) }}
+            style={styles.heroImage}
+            onError={() => setImageError(true)}
+            resizeMode="cover"
+          />
+        )}
+        <LinearGradient
+          colors={["rgba(7,10,18,0.7)", "rgba(7,10,18,0.1)", "rgba(7,10,18,0.7)"]}
+          style={styles.gradientOverlay}
+          pointerEvents="none"
+        />
         <View style={styles.overlay} />
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
           <ArrowLeft size={20} color={Colors.onSurface} />
@@ -57,30 +98,39 @@ export function WorkoutDetailScreen() {
           <Text style={styles.heroTitle}>{workout.title}</Text>
           <Text style={styles.heroSubtitle}>WORKOUT DETAILS</Text>
         </View>
+        <View style={styles.motivationalQuoteBox}>
+          <Text style={styles.motivationalQuote}>
+            "Push yourself, because no one else is going to do it for you."
+          </Text>
+        </View>
       </View>
 
-      <Card style={styles.statsCard}>
-        <StatBlock icon={<Flame size={20} color={Colors.error} />} value={`${workout.caloriesBurn}`} label="KCAL" />
-        <StatBlock icon={<Clock size={20} color={Colors.primary} />} value={`${workout.duration}`} label="MINS" />
-        <StatBlock icon={<Dumbbell size={20} color={Colors.secondary} />} value={`${workout.exercises?.length ?? 0}`} label="EXERCISES" />
-      </Card>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Card style={styles.statsCard}>
+          <StatBlock icon={<Flame size={20} color={Colors.error} />} value={`${workout.caloriesBurn}`} label="KCAL" />
+          <StatBlock icon={<Clock size={20} color={Colors.primary} />} value={`${workout.duration}`} label="MINS" />
+          <StatBlock icon={<Dumbbell size={20} color={Colors.secondary} />} value={`${workout.exercises?.length ?? 0}`} label="EXERCISES" />
+        </Card>
+      </Animated.View>
 
-      <View style={styles.smallCardsRow}>
-        <Card style={styles.smallCard}>
-          <View style={styles.smallCardLabelRow}>
-            <Heart size={20} color={Colors.error} />
-            <Text style={styles.smallCardLabel}>AVG HEART RATE</Text>
-          </View>
-          <Text style={styles.smallCardValue}>142 bpm</Text>
-        </Card>
-        <Card style={styles.smallCard}>
-          <View style={styles.smallCardLabelRow}>
-            <Zap size={20} color={Colors.secondary} />
-            <Text style={styles.smallCardLabel}>INTENSITY</Text>
-          </View>
-          <Text style={styles.smallCardValue}>High</Text>
-        </Card>
-      </View>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <View style={styles.smallCardsRow}>
+          <Card style={styles.smallCard}>
+            <View style={styles.smallCardLabelRow}>
+              <Heart size={20} color={Colors.error} />
+              <Text style={styles.smallCardLabel}>AVG HEART RATE</Text>
+            </View>
+            <Text style={styles.smallCardValue}>142 bpm</Text>
+          </Card>
+          <Card style={styles.smallCard}>
+            <View style={styles.smallCardLabelRow}>
+              <Zap size={20} color={Colors.secondary} />
+              <Text style={styles.smallCardLabel}>INTENSITY</Text>
+            </View>
+            <Text style={styles.smallCardValue}>High</Text>
+          </Card>
+        </View>
+      </Animated.View>
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Movement Flow</Text>
@@ -88,22 +138,37 @@ export function WorkoutDetailScreen() {
       </View>
 
       {workout.exercises?.map((exercise, index) => (
-        <View key={exercise._id || exercise.name + index} style={styles.movementRow}>
-          <View style={styles.movementIndex}><Text style={styles.movementIndexText}>{String(index + 1).padStart(2, '0')}</Text></View>
-          <Card style={styles.movementCard}>
-            <Image source={{ uri: exercise.image }} style={styles.movementImage} />
-            <View style={styles.movementBody}>
-              <Text style={styles.movementTitle}>{exercise.name}</Text>
-              <Text style={styles.movementMeta}>{exercise.sets} Sets • {exercise.reps} Reps</Text>
-            </View>
-            <MoreVertical size={18} color={Colors.onSurfaceVariant} />
-          </Card>
-        </View>
+        <Animated.View key={exercise._id || exercise.name + index} style={{ opacity: fadeAnim }}>
+          <View style={styles.movementRow}>
+            <View style={styles.movementIndex}><Text style={styles.movementIndexText}>{String(index + 1).padStart(2, '0')}</Text></View>
+            <Card style={styles.movementCard}>
+              {exercise.image ? (
+                <Image source={{ uri: exercise.image }} style={styles.movementImage} resizeMode="cover" />
+              ) : (
+                <View style={[styles.movementImage, styles.heroImageFallback]}>
+                  <Text style={styles.heroImageFallbackText}>No Image</Text>
+                </View>
+              )}
+              <View style={styles.movementBody}>
+                <Text style={styles.movementTitle}>{exercise.name}</Text>
+                <Text style={styles.movementMeta}>{exercise.sets} Sets • {exercise.reps} Reps</Text>
+              </View>
+              <MoreVertical size={18} color={Colors.onSurfaceVariant} />
+            </Card>
+          </View>
+        </Animated.View>
       ))}
 
-      <Button style={styles.startSessionButton} onPress={handleComplete} disabled={completing}>
-        {completing ? 'Completing...' : 'Start Session'}
-      </Button>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Button
+          style={styles.startSessionButton}
+          onPress={handleComplete}
+          disabled={completing}
+          textStyle={styles.startSessionButtonText}
+        >
+          {completing ? 'Completing...' : 'Start Session'}
+        </Button>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -119,6 +184,37 @@ function StatBlock({ icon, value, label }: { icon: React.ReactNode; value: strin
 }
 
 const styles = StyleSheet.create({
+  gradientOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
+  },
+  heroImageFallback: {
+    backgroundColor: Colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroImageFallbackText: {
+    color: Colors.onSurfaceVariant,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  motivationalQuoteBox: {
+    position: 'absolute',
+    bottom: 10,
+    left: 20,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderRadius: 16,
+    padding: 12,
+    zIndex: 2,
+  },
+  motivationalQuote: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    fontWeight: '700',
+  },
   content: {
     padding: 24,
     paddingBottom: 120,
@@ -300,6 +396,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   startSessionButton: {
-    marginTop: 10,
+    marginTop: 20,
+    backgroundColor: Colors.primary,
+    borderRadius: 18,
+    paddingVertical: 18,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  startSessionButtonText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
 });

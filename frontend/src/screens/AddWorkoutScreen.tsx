@@ -1,14 +1,33 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ArrowLeft, Clock, Flame, Info, Plus, Upload, ChevronRight } from 'lucide-react-native';
+import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { ArrowLeft, Clock, Flame, Info, Upload } from 'lucide-react-native';
 import { Button } from '@/src/components/ui/Button';
 import { Card } from '@/src/components/ui/Card';
 import { createWorkout } from '@/src/services/api/workouts';
+import { uploadMedia } from '@/src/services/api/upload';
 import { Colors } from '@/src/constants/theme';
 
 const difficultyLevels = ['Elite', 'Pro', 'Basic'];
 const categories = ['Strength Training', 'HIIT', 'Yoga & Flow', 'Mobility'];
+
+type MediaFile = {
+  uri: string;
+  type: string;
+  name: string;
+};
+
+const getMimeType = (uri: string, assetType: 'image' | 'video' | string) => {
+  const ext = uri.split('.').pop()?.toLowerCase();
+  if (assetType === 'video') {
+    if (ext === 'mov') return 'video/quicktime';
+    if (ext === 'mp4') return 'video/mp4';
+    return `video/${ext || 'mp4'}`;
+  }
+  if (ext === 'png') return 'image/png';
+  return 'image/jpeg';
+};
 
 export function AddWorkoutScreen() {
   const router = useRouter();
@@ -17,45 +36,95 @@ export function AddWorkoutScreen() {
   const [difficulty, setDifficulty] = useState('Pro');
   const [duration, setDuration] = useState('45');
   const [calories, setCalories] = useState('600');
-  const [notes, setNotes] = useState('Describe the focus areas and performance goals...');
+  const [notes, setNotes] = useState('');
+  const [media, setMedia] = useState<MediaFile | null>(null);
+  const [uploading, setUploading] = useState(false);
 
-  const handlePublish = async () => {
+  const pickMedia = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Please allow access to your media library to upload a workout cover image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.7,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    const assetType = asset.type || 'image';
+    const mimeType = getMimeType(asset.uri, assetType);
+    const name = asset.fileName || `workout-media-${Date.now()}.${mimeType.split('/')[1]}`;
+
+    setMedia({ uri: asset.uri, type: mimeType, name });
+  };
+
+  const uploadSelectedMedia = async () => {
+    if (!media) return '';
+    setUploading(true);
     try {
-      await createWorkout({
-        title,
-        description: notes,
-        category,
-        duration: Number(duration),
-        caloriesBurn: Number(calories),
-        difficulty,
-        exercises: [],
-        thumbnail: '',
-        status: 'published',
-      });
-      Alert.alert('Workout Published', 'The workout has been saved to the platform.');
-      router.back();
+      const result = await uploadMedia(media);
+      return result.url || result.secure_url || '';
     } catch (error: any) {
-      Alert.alert('Save failed', error?.message || 'Unable to publish workout.');
+      Alert.alert('Upload failed', error?.message || 'Unable to upload workout media.');
+      return '';
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleSaveDraft = async () => {
+  const validateFields = () => {
+    if (!title.trim()) {
+      Alert.alert('Missing title', 'Please provide a workout title.');
+      return false;
+    }
+    if (!duration.trim() || Number(duration) <= 0) {
+      Alert.alert('Invalid duration', 'Please enter a valid duration in minutes.');
+      return false;
+    }
+    if (!calories.trim() || Number(calories) <= 0) {
+      Alert.alert('Invalid calories', 'Please enter a valid calories estimate.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleSave = async (status: 'published' | 'draft') => {
+    if (!validateFields()) {
+      return;
+    }
+
+    let thumbnail = '';
+    if (media) {
+      thumbnail = await uploadSelectedMedia();
+      if (!thumbnail) {
+        return;
+      }
+    }
+
     try {
       await createWorkout({
-        title,
-        description: notes,
+        title: title.trim(),
+        description: notes.trim(),
         category,
         duration: Number(duration),
         caloriesBurn: Number(calories),
         difficulty,
         exercises: [],
-        thumbnail: '',
-        status: 'draft',
+        thumbnail,
+        status,
       });
-      Alert.alert('Saved as Draft', 'Draft workout has been created.');
+      Alert.alert(status === 'published' ? 'Workout Published' : 'Saved as Draft', 'The workout has been saved successfully.');
       router.back();
     } catch (error: any) {
-      Alert.alert('Save failed', error?.message || 'Unable to save draft.');
+      Alert.alert('Save failed', error?.message || 'Unable to save workout.');
     }
   };
 
@@ -74,11 +143,23 @@ export function AddWorkoutScreen() {
 
       <Card style={styles.sectionCard}>
         <Text style={styles.fieldLabel}>Cover Media</Text>
-        <View style={styles.uploadBox}>
-          <Upload size={32} color={Colors.onSurfaceVariant} />
-          <Text style={styles.uploadTitle}>Drag & drop or Browse</Text>
-          <Text style={styles.uploadSubtitle}>Supports MP4, MOV, JPG (Max 50MB)</Text>
-        </View>
+        <TouchableOpacity style={styles.uploadBox} onPress={pickMedia} activeOpacity={0.8}>
+          {media ? (
+            <Image source={{ uri: media.uri }} style={styles.mediaPreview} resizeMode="cover" />
+          ) : (
+            <>
+              <Upload size={32} color={Colors.onSurfaceVariant} />
+              <Text style={styles.uploadTitle}>Tap to choose media</Text>
+              <Text style={styles.uploadSubtitle}>Supports MP4, MOV, JPG (Max 50MB)</Text>
+            </>
+          )}
+        </TouchableOpacity>
+        {uploading && (
+          <View style={styles.uploadingRow}>
+            <ActivityIndicator color={Colors.primary} />
+            <Text style={styles.uploadingText}>Uploading media...</Text>
+          </View>
+        )}
       </Card>
 
       <View style={styles.fieldGroup}>
@@ -140,6 +221,8 @@ export function AddWorkoutScreen() {
         <View style={styles.textAreaWrapper}>
           <TextInput
             style={[styles.input, styles.textArea]}
+            placeholder="Describe the focus areas and performance goals..."
+            placeholderTextColor={Colors.onSurfaceVariant}
             multiline
             numberOfLines={6}
             value={notes}
@@ -149,10 +232,10 @@ export function AddWorkoutScreen() {
         </View>
       </View>
 
-      <Button style={styles.publishButton} onPress={handlePublish}>
+      <Button style={styles.publishButton} onPress={() => handleSave('published')}>
         PUBLISH WORKOUT
       </Button>
-      <TouchableOpacity style={styles.draftButton} onPress={handleSaveDraft}>
+      <TouchableOpacity style={styles.draftButton} onPress={() => handleSave('draft')}>
         <Text style={styles.draftButtonText}>SAVE AS DRAFT</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -218,6 +301,12 @@ const styles = StyleSheet.create({
     paddingVertical: 32,
     alignItems: 'center',
     gap: 10,
+    overflow: 'hidden',
+  },
+  mediaPreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 18,
   },
   uploadTitle: {
     color: Colors.onSurface,
@@ -229,6 +318,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     maxWidth: 220,
+  },
+  uploadingRow: {
+    marginTop: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  uploadingText: {
+    color: Colors.onSurfaceVariant,
+    fontSize: 12,
   },
   fieldGroup: {
     gap: 10,

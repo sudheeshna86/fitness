@@ -6,7 +6,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Card } from '@/src/components/ui/Card';
 import { useAuth } from '@/src/hooks/useAuth';
 import { fetchAnalytics } from '@/src/services/api/analytics';
-import { fetchWorkouts } from '@/src/services/api/workouts';
+import { workoutService } from '@/src/services/workoutService';
 import { Colors } from '@/src/constants/theme';
 
 const challenges = [

@@ -1,14 +1,33 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { ArrowLeft, CalendarDays, Clock, Flame, Flag, DollarSign, Trophy } from 'lucide-react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, Image, ActivityIndicator } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { ArrowLeft, CalendarDays, Clock, Flame, Flag, DollarSign, Trophy, Users, Upload } from 'lucide-react-native';
 import { Button } from '@/src/components/ui/Button';
 import { Card } from '@/src/components/ui/Card';
 import { createChallenge } from '@/src/services/api/challenges';
+import { uploadMedia } from '@/src/services/api/upload';
 import { Colors } from '@/src/constants/theme';
 
 const challengeTypes = ['Global Challenge', 'Program Launch', 'Community Event'];
 const statusOptions = ['Live', 'Draft', 'Pending'];
+
+type MediaFile = {
+  uri: string;
+  type: string;
+  name: string;
+};
+
+const getMimeType = (uri: string, assetType: 'image' | 'video' | string) => {
+  const ext = uri.split('.').pop()?.toLowerCase();
+  if (assetType === 'video') {
+    if (ext === 'mov') return 'video/quicktime';
+    if (ext === 'mp4') return 'video/mp4';
+    return `video/${ext || 'mp4'}`;
+  }
+  if (ext === 'png') return 'image/png';
+  return 'image/jpeg';
+};
 
 export function NewChallengeScreen() {
   const router = useRouter();
@@ -18,15 +37,75 @@ export function NewChallengeScreen() {
   const [participants, setParticipants] = useState('2500');
   const [duration, setDuration] = useState('30');
   const [description, setDescription] = useState('Describe the challenge, goals, and the expected athlete experience.');
+  const [media, setMedia] = useState<MediaFile | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const pickMedia = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'Please allow access to your media library to upload a challenge cover image.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.7,
+    });
+
+    if (result.canceled) {
+      return;
+    }
+
+    const asset = result.assets[0];
+    const assetType = asset.type || 'image';
+    const mimeType = getMimeType(asset.uri, assetType);
+    const name = asset.fileName || `challenge-image-${Date.now()}.${mimeType.split('/')[1]}`;
+
+    setMedia({ uri: asset.uri, type: mimeType, name });
+  };
+
+  const uploadSelectedMedia = async () => {
+    if (!media) return '';
+    setUploading(true);
+    try {
+      const result = await uploadMedia(media);
+      return result.url || result.secure_url || '';
+    } catch (error: any) {
+      Alert.alert('Upload failed', error?.message || 'Unable to upload challenge image.');
+      return '';
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const validateFields = () => {
+    if (!title.trim()) {
+      Alert.alert('Validation', 'Please enter a challenge title.');
+      return false;
+    }
+    if (!description.trim() || description === 'Describe the challenge, goals, and the expected athlete experience.') {
+      Alert.alert('Validation', 'Please enter a challenge description.');
+      return false;
+    }
+    return true;
+  };
 
   const handleCreate = async () => {
+    if (!validateFields()) return;
     try {
+      let imageUrl = '';
+      if (media) {
+        imageUrl = await uploadSelectedMedia();
+      }
       await createChallenge({
         title,
         description,
         reward: description,
         status,
         endsInDays: Number(duration),
+        imageUrl: imageUrl || undefined,
       });
       Alert.alert('Created', 'Challenge created successfully.');
       router.back();
@@ -36,13 +115,19 @@ export function NewChallengeScreen() {
   };
 
   const handleSaveDraft = async () => {
+    if (!validateFields()) return;
     try {
+      let imageUrl = '';
+      if (media) {
+        imageUrl = await uploadSelectedMedia();
+      }
       await createChallenge({
         title,
         description,
         reward: description,
         status: 'Draft',
         endsInDays: Number(duration),
+        imageUrl: imageUrl || undefined,
       });
       Alert.alert('Saved', 'Challenge draft saved successfully.');
       router.back();
@@ -62,11 +147,31 @@ export function NewChallengeScreen() {
 
       <Card style={styles.sectionCard}>
         <Text style={styles.fieldLabel}>Cover Image</Text>
-        <View style={styles.uploadBox}>
-          <Flag size={32} color={Colors.onSurfaceVariant} />
-          <Text style={styles.uploadTitle}>Add a cover image</Text>
-          <Text style={styles.uploadSubtitle}>JPG, PNG, or WEBP (Max 20MB)</Text>
-        </View>
+        <TouchableOpacity onPress={pickMedia} disabled={uploading}>
+          {media ? (
+            <View style={styles.imagePreviewContainer}>
+              <Image source={{ uri: media.uri }} style={styles.imagePreview} />
+              {uploading && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="large" color={Colors.primary} />
+                  <Text style={styles.uploadingText}>Uploading...</Text>
+                </View>
+              )}
+              {!uploading && (
+                <TouchableOpacity style={styles.changeImageButton} onPress={pickMedia}>
+                  <Upload size={16} color={Colors.onPrimary} />
+                  <Text style={styles.changeImageButtonText}>Change Image</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View style={styles.uploadBox}>
+              <Flag size={32} color={Colors.onSurfaceVariant} />
+              <Text style={styles.uploadTitle}>Add a cover image</Text>
+              <Text style={styles.uploadSubtitle}>JPG, PNG, or WEBP (Max 20MB)</Text>
+            </View>
+          )}
+        </TouchableOpacity>
       </Card>
 
       <View style={styles.fieldGroup}>
@@ -287,5 +392,48 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
+  },
+  imagePreviewContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  imagePreview: {
+    width: '100%',
+    height: 180,
+    borderRadius: 24,
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  uploadingText: {
+    color: Colors.onPrimary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  changeImageButton: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  changeImageButtonText: {
+    color: Colors.onPrimary,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

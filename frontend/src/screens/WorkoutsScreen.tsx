@@ -1,6 +1,6 @@
+import React, { useEffect, useState, useRef } from 'react';
+import { FlatList, Image, StyleSheet, Text, TextInput, View, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { FlatList, Image, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Clock, Flame, Search } from 'lucide-react-native';
 import { Button } from '@/src/components/ui/Button';
 import { Card } from '@/src/components/ui/Card';
@@ -10,6 +10,56 @@ import { Colors } from '@/src/constants/theme';
 
 const categoryList = ['ALL', 'HIIT', 'YOGA', 'STRENGTH', 'RECOVERY'];
 
+// Define Props for the Animated Card
+interface AnimatedWorkoutCardProps {
+  item: Workout;
+  index: number;
+  onPress: () => void;
+}
+
+// AnimatedWorkoutCard component for animated workout cards
+function AnimatedWorkoutCard({ item, index, onPress }: AnimatedWorkoutCardProps) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      delay: index * 80,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim, index]);
+
+  return (
+    <Animated.View style={{ opacity: fadeAnim, marginBottom: 24 }}>
+      <Card style={styles.featuredCard}>
+        <Image source={{ uri: item.image }} style={styles.featuredImage} />
+        {item.isFeatured && (
+          <View style={styles.featuredBadge}>
+            <Text style={styles.badgeText}>FEATURED MASTERCLASS</Text>
+          </View>
+        )}
+        <View style={styles.featuredText}>
+          <Text style={styles.featuredTitle}>{item.title}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Clock size={16} color={Colors.primary} />
+              <Text style={styles.metaText}>{item.duration} MIN</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Flame size={16} color={Colors.tertiary} />
+              <Text style={styles.metaText}>{item.calories} KCAL</Text>
+            </View>
+          </View>
+          <Button style={styles.startButton} onPress={onPress}>
+            Start Workout
+          </Button>
+        </View>
+      </Card>
+    </Animated.View>
+  );
+}
+
 export function WorkoutsScreen() {
   const router = useRouter();
   const [workouts, setWorkouts] = useState<Workout[]>([]);
@@ -17,98 +67,85 @@ export function WorkoutsScreen() {
   const [query, setQuery] = useState('');
 
   useEffect(() => {
-    workoutService.getWorkouts().then(setWorkouts);
+    const loadWorkouts = async () => {
+      try {
+        const data = await workoutService.getWorkouts();
+        setWorkouts(data);
+      } catch (error) {
+        console.error('Failed to load workouts:', error);
+      }
+    };
+    loadWorkouts();
   }, []);
 
   const filteredWorkouts = workouts.filter((workout) => {
-    const matchesCategory = selectedCategory === 'ALL' || workout.category.toUpperCase() === selectedCategory;
-    const matchesSearch = workout.title.toLowerCase().includes(query.toLowerCase()) || workout.trainer.toLowerCase().includes(query.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'ALL' || workout.category.toUpperCase() === selectedCategory;
+    const matchesSearch =
+      workout.title.toLowerCase().includes(query.toLowerCase()) ||
+      workout.trainer.toLowerCase().includes(query.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const featured = workouts.find((workout) => workout.isFeatured) ?? workouts[0];
-
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <View style={styles.searchField}>
-        <Search size={20} color={Colors.onSurfaceVariant} />
-        <TextInput
-          value={query}
-          onChangeText={setQuery}
-          placeholder="Search workouts, trainers..."
-          placeholderTextColor={Colors.onSurfaceVariant}
-          style={styles.input}
-        />
+    <View style={{ flex: 1, backgroundColor: Colors.background }}>
+      <View style={styles.content}>
+        <View style={styles.searchField}>
+          <Search size={20} color={Colors.onSurfaceVariant} />
+          <TextInput
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Search workouts, trainers..."
+            placeholderTextColor={Colors.onSurfaceVariant}
+            style={styles.input}
+          />
+        </View>
+        <View style={styles.categoryRow}>
+          {categoryList.map((item) => {
+            const active = item === selectedCategory;
+            return (
+              <Button
+                key={item}
+                variant={active ? 'primary' : 'secondary'}
+                style={[styles.categoryButton, active && styles.categoryActive]}
+                onPress={() => setSelectedCategory(item)}
+              >
+                {item}
+              </Button>
+            );
+          })}
+        </View>
       </View>
-      <View style={styles.categoryRow}>
-        {categoryList.map((item) => {
-          const active = item === selectedCategory;
-          return (
-            <Button
-              key={item}
-              variant={active ? 'primary' : 'secondary'}
-              style={[styles.categoryButton, active && styles.categoryActive]}
-              onPress={() => setSelectedCategory(item)}
-            >
-              {item}
-            </Button>
-          );
-        })}
-      </View>
-
-      {featured ? (
-        <Card style={styles.featuredCard}>
-          <Image source={{ uri: featured.image }} style={styles.featuredImage} />
-          <View style={styles.featuredBadge}>
-            <Text style={styles.badgeText}>FEATURED MASTERCLASS</Text>
-          </View>
-          <View style={styles.featuredText}>
-            <Text style={styles.featuredTitle}>{featured.title}</Text>
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <Clock size={16} color={Colors.primary} />
-                <Text style={styles.metaText}>{featured.duration} MIN</Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Flame size={16} color={Colors.tertiary} />
-                <Text style={styles.metaText}>{featured.calories} KCAL</Text>
-              </View>
-            </View>
-            <Button style={styles.startButton} onPress={() => router.push({ pathname: '/workout-detail/[id]', params: { id: featured.id } })}>Start Workout</Button>
-          </View>
-        </Card>
-      ) : null}
-
-      <Text style={styles.sectionHeading}>Popular Near You</Text>
-      <View style={styles.popularList}>
-        {filteredWorkouts.map((workout) => (
-          <Card key={workout.id} style={styles.workoutRow}>
-            <Image source={{ uri: workout.image }} style={styles.workoutImage} />
-            <View style={styles.workoutBody}>
-              <Text style={styles.workoutTitle}>{workout.title}</Text>
-              <Text style={styles.workoutMeta}>{workout.trainer} • {workout.category}</Text>
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <Clock size={12} color={Colors.onSurfaceVariant} />
-                  <Text style={styles.statText}>{workout.duration}M</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Flame size={12} color={Colors.onSurfaceVariant} />
-                  <Text style={styles.statText}>{workout.calories} CAL</Text>
-                </View>
-              </View>
-            </View>
-          </Card>
-        ))}
-      </View>
-    </ScrollView>
+      
+      <FlatList
+        data={filteredWorkouts}
+        renderItem={({ item, index }) => (
+          <AnimatedWorkoutCard
+            item={item}
+            index={index}
+            onPress={() =>
+              router.push({
+                pathname: '/workout-detail/[id]',
+                params: { id: item.id },
+              })
+            }
+          />
+        )}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No workouts found.</Text>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    padding: 24,
-    paddingBottom: 120,
+    paddingTop: 24,
+    paddingHorizontal: 24,
     gap: 18,
   },
   searchField: {
@@ -191,6 +228,12 @@ const styles = StyleSheet.create({
   startButton: {
     marginTop: 8,
   },
+  emptyText: {
+    color: Colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginTop: 40,
+  },
+  // Retaining your extra unused styles below in case they are used in extended layouts
   sectionHeading: {
     color: Colors.onSurface,
     fontSize: 18,
