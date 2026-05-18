@@ -11,8 +11,8 @@ const {
 
 const router = express.Router();
 
-router.get('/', protect, getWorkouts);
-router.get('/:id', protect, getWorkoutById);
+router.get('/', getWorkouts);
+router.get('/:id', getWorkoutById);
 router.post('/', protect, createWorkout);
 router.put('/:id', protect, admin, updateWorkout);
 router.delete('/:id', protect, admin, deleteWorkout);

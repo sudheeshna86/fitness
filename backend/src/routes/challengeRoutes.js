@@ -11,8 +11,8 @@ const {
 
 const router = express.Router();
 
-router.get('/', protect, getChallenges);
-router.post('/', protect, admin, createChallenge);
+router.get('/', getChallenges);
+router.post('/', protect, createChallenge);
 router.put('/:id', protect, admin, updateChallenge);
 router.delete('/:id', protect, admin, deleteChallenge);
 router.post('/:id/join', protect, joinChallenge);
