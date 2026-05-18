@@ -12,15 +12,35 @@ export interface UserProfileUpdate {
 
 export const fetchProfile = async () => {
   const response = await axiosInstance.get('/users/profile');
-  return response.data;
+
+  return response.data.user;
 };
 
 export const fetchUserById = async (id: string) => {
   const response = await axiosInstance.get(`/users/${id}`);
-  return response.data;
+
+  return response.data.user;
 };
 
-export const updateUserProfile = async (id: string, payload: UserProfileUpdate) => {
-  const response = await axiosInstance.put(`/users/${id}`, payload);
-  return response.data;
+export const updateMyProfile = async (
+  payload: UserProfileUpdate
+) => {
+  const response = await axiosInstance.put(
+    '/users/profile',
+    payload
+  );
+
+  return response.data.user;
+};
+
+export const updateUserProfile = async (
+  id: string,
+  payload: UserProfileUpdate
+) => {
+  const response = await axiosInstance.put(
+    `/users/${id}`,
+    payload
+  );
+
+  return response.data.user;
 };

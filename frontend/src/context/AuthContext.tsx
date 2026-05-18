@@ -21,6 +21,7 @@ interface User {
 }
 
 interface AuthContextValue {
+  _id: string;
   user: User | null;
   token: string | null;
   loading: boolean;
