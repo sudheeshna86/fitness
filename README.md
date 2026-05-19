@@ -9,7 +9,7 @@ It empowers users to track workouts, hydration, sleep, and challenges, with anal
 
 ## 📺 Screen Recording Demo
 
-[Screen Recording Demo (Google Drive)](https://drive.google.com/file/d/10UaxyakhqMtZ4KWxkanqmnTXvShE4NOd/view?usp=drivesdk)
+
 
 
 
