@@ -1,284 +1,254 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { FlatList, Image, StyleSheet, Text, TextInput, View, Animated } from 'react-native';
+import React, {
+  useCallback,
+  useState,
+} from 'react';
+
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import {
+  useFocusEffect,
+} from '@react-navigation/native';
+
 import { useRouter } from 'expo-router';
-import { Clock, Flame, Search } from 'lucide-react-native';
-import { Button } from '@/src/components/ui/Button';
-import { Card } from '@/src/components/ui/Card';
-import { workoutService } from '@/src/services/workoutService';
-import { Workout } from '@/src/types';
+
+import {
+  Dumbbell,
+  Flame,
+  Zap,
+} from 'lucide-react-native';
+
 import { Colors } from '@/src/constants/theme';
 
-const categoryList = ['ALL', 'HIIT', 'YOGA', 'STRENGTH', 'RECOVERY'];
+import { WorkoutCard } from '@/src/components/workouts/WorkoutCard';
 
-// Define Props for the Animated Card
-interface AnimatedWorkoutCardProps {
-  item: Workout;
-  index: number;
-  onPress: () => void;
-}
-
-// AnimatedWorkoutCard component for animated workout cards
-function AnimatedWorkoutCard({ item, index, onPress }: AnimatedWorkoutCardProps) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      delay: index * 80,
-      useNativeDriver: true,
-    }).start();
-  }, [fadeAnim, index]);
-
-  return (
-    <Animated.View style={{ opacity: fadeAnim, marginBottom: 24 }}>
-      <Card style={styles.featuredCard}>
-        <Image source={{ uri: item.image }} style={styles.featuredImage} />
-        {item.isFeatured && (
-          <View style={styles.featuredBadge}>
-            <Text style={styles.badgeText}>FEATURED MASTERCLASS</Text>
-          </View>
-        )}
-        <View style={styles.featuredText}>
-          <Text style={styles.featuredTitle}>{item.title}</Text>
-          <View style={styles.metaRow}>
-            <View style={styles.metaItem}>
-              <Clock size={16} color={Colors.primary} />
-              <Text style={styles.metaText}>{item.duration} MIN</Text>
-            </View>
-            <View style={styles.metaItem}>
-              <Flame size={16} color={Colors.tertiary} />
-              <Text style={styles.metaText}>{item.calories} KCAL</Text>
-            </View>
-          </View>
-          <Button style={styles.startButton} onPress={onPress}>
-            Start Workout
-          </Button>
-        </View>
-      </Card>
-    </Animated.View>
-  );
-}
+import {
+  fetchWorkouts,
+} from '@/src/services/api/workouts';
 
 export function WorkoutsScreen() {
   const router = useRouter();
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState('ALL');
-  const [query, setQuery] = useState('');
 
-  useEffect(() => {
-    const loadWorkouts = async () => {
-      try {
-        const data = await workoutService.getWorkouts();
-        setWorkouts(data);
-      } catch (error) {
-        console.error('Failed to load workouts:', error);
-      }
-    };
-    loadWorkouts();
-  }, []);
+  const [refreshing, setRefreshing] =
+    useState(false);
 
-  const filteredWorkouts = workouts.filter((workout) => {
-    const matchesCategory =
-      selectedCategory === 'ALL' || workout.category.toUpperCase() === selectedCategory;
-    const matchesSearch =
-      workout.title.toLowerCase().includes(query.toLowerCase()) ||
-      workout.trainer.toLowerCase().includes(query.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const [workouts, setWorkouts] =
+    useState<any[]>([]);
+
+  const loadData = async () => {
+    try {
+      const response =
+        await fetchWorkouts();
+
+      setWorkouts(
+        response?.workouts ||
+          response ||
+          []
+      );
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+
+      await loadData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const featuredWorkout =
+    workouts[0];
 
   return (
-    <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      <View style={styles.content}>
-        <View style={styles.searchField}>
-          <Search size={20} color={Colors.onSurfaceVariant} />
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search workouts, trainers..."
-            placeholderTextColor={Colors.onSurfaceVariant}
-            style={styles.input}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={
+        styles.content
+      }
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+      showsVerticalScrollIndicator={
+        false
+      }
+    >
+      <Text style={styles.heading}>
+        Workouts
+      </Text>
+
+      <Text style={styles.subheading}>
+        Train smarter. Build
+        consistency. Transform your
+        body.
+      </Text>
+
+      <View style={styles.statsRow}>
+        <View style={styles.statCard}>
+          <Dumbbell
+            size={22}
+            color={Colors.primary}
           />
+
+          <Text style={styles.statValue}>
+            {workouts.length}
+          </Text>
+
+          <Text style={styles.statLabel}>
+            Programs
+          </Text>
         </View>
-        <View style={styles.categoryRow}>
-          {categoryList.map((item) => {
-            const active = item === selectedCategory;
-            return (
-              <Button
-                key={item}
-                variant={active ? 'primary' : 'secondary'}
-                style={[styles.categoryButton, active && styles.categoryActive]}
-                onPress={() => setSelectedCategory(item)}
-              >
-                {item}
-              </Button>
-            );
-          })}
+
+        <View style={styles.statCard}>
+          <Flame
+            size={22}
+            color="#FB923C"
+          />
+
+          <Text style={styles.statValue}>
+            1200+
+          </Text>
+
+          <Text style={styles.statLabel}>
+            Calories
+          </Text>
+        </View>
+
+        <View style={styles.statCard}>
+          <Zap
+            size={22}
+            color="#FACC15"
+          />
+
+          <Text style={styles.statValue}>
+            Pro
+          </Text>
+
+          <Text style={styles.statLabel}>
+            Intensity
+          </Text>
         </View>
       </View>
-      
-      <FlatList
-        data={filteredWorkouts}
-        renderItem={({ item, index }) => (
-          <AnimatedWorkoutCard
-            item={item}
-            index={index}
+
+      {featuredWorkout && (
+        <>
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Featured Workout
+          </Text>
+
+          <WorkoutCard
+            workout={
+              featuredWorkout
+            }
             onPress={() =>
-              router.push({
-                pathname: '/workout-detail/[id]',
-                params: { id: item.id },
-              })
+              router.push(
+                `/workout/${featuredWorkout._id}`
+              )
             }
           />
-        )}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ padding: 24, paddingBottom: 120 }}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>No workouts found.</Text>
-        }
-      />
-    </View>
+        </>
+      )}
+
+      <Text style={styles.sectionTitle}>
+        Workout Programs
+      </Text>
+
+      {workouts.map((workout) => (
+        <WorkoutCard
+          key={workout._id}
+          workout={workout}
+          onPress={() =>
+            router.push(
+              `/workout/${workout._id}`
+            )
+          }
+        />
+      ))}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor:
+      Colors.background,
+  },
+
   content: {
-    paddingTop: 24,
-    paddingHorizontal: 24,
-    gap: 18,
-  },
-  searchField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.card,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    gap: 10,
-    marginBottom: 16,
-  },
-  input: {
-    flex: 1,
-    color: Colors.onSurface,
-    height: 48,
-  },
-  categoryRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
-  },
-  categoryButton: {
-    borderRadius: 999,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-  },
-  categoryActive: {
-    backgroundColor: Colors.primary,
-  },
-  featuredCard: {
-    padding: 0,
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  featuredImage: {
-    width: '100%',
-    height: 260,
-  },
-  featuredBadge: {
-    position: 'absolute',
-    top: 20,
-    left: 20,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 18,
-  },
-  badgeText: {
-    color: Colors.primary,
-    fontSize: 10,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-  },
-  featuredText: {
     padding: 20,
-    backgroundColor: Colors.surface,
+    paddingBottom: 120,
   },
-  featuredTitle: {
+
+  heading: {
     color: Colors.onSurface,
-    fontSize: 22,
-    fontWeight: '800',
-    marginBottom: 14,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 18,
-  },
-  metaItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  metaText: {
-    color: Colors.onSurfaceVariant,
-    fontSize: 12,
-  },
-  startButton: {
-    marginTop: 8,
-  },
-  emptyText: {
-    color: Colors.onSurfaceVariant,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-  // Retaining your extra unused styles below in case they are used in extended layouts
-  sectionHeading: {
-    color: Colors.onSurface,
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 12,
-  },
-  popularList: {
-    gap: 16,
-  },
-  workoutRow: {
-    flexDirection: 'row',
-    gap: 14,
-    padding: 16,
-    alignItems: 'center',
-  },
-  workoutImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 18,
-  },
-  workoutBody: {
-    flex: 1,
-    gap: 6,
-  },
-  workoutTitle: {
-    color: Colors.onSurface,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  workoutMeta: {
-    color: Colors.onSurfaceVariant,
-    fontSize: 12,
+    fontSize: 36,
+    fontWeight: '900',
     marginBottom: 10,
   },
+
+  subheading: {
+    color: Colors.onSurfaceVariant,
+    lineHeight: 24,
+    marginBottom: 30,
+    fontSize: 15,
+  },
+
   statsRow: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 30,
   },
-  statItem: {
-    flexDirection: 'row',
-    gap: 4,
+
+  statCard: {
+    flex: 1,
+
+    backgroundColor: Colors.card,
+
+    padding: 18,
+    borderRadius: 22,
+
     alignItems: 'center',
   },
-  statText: {
+
+  statValue: {
+    color: Colors.onSurface,
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 10,
+  },
+
+  statLabel: {
     color: Colors.onSurfaceVariant,
+    marginTop: 6,
     fontSize: 12,
+  },
+
+  sectionTitle: {
+    color: Colors.onSurface,
+    fontSize: 24,
+    fontWeight: '900',
+    marginBottom: 18,
   },
 });

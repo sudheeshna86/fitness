@@ -1,181 +1,269 @@
-import React, { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Flame, Trophy, Users } from 'lucide-react-native';
-import { Button } from '@/src/components/ui/Button';
-import { Card } from '@/src/components/ui/Card';
-import { fetchChallenges, joinChallenge, completeChallenge } from '@/src/services/api/challenges';
-import { Challenge } from '@/src/types';
+import React, {
+  useCallback,
+  useState,
+} from 'react';
+
+import {
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+
+import {
+  useFocusEffect,
+} from '@react-navigation/native';
+
+import { useRouter } from 'expo-router';
+
+import {
+  fetchChallenges,
+  fetchMyChallenges,
+  joinChallenge,
+} from '@/src/services/api/challenges';
+
+import { ChallengesEmptyState } from '../components/challenges/ChallengesEmptyState';
+
 import { Colors } from '@/src/constants/theme';
 
+import { Button } from '@/src/components/ui/Button';
+
+import { ChallengeHeroCard } from '@/src/components/challenges/ChallengeHeroCard';
+
+import { ActiveChallengeCard } from '@/src/components/challenges/ActiveChallengeCard';
+
 export function ChallengesScreen() {
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const router = useRouter();
 
-  const loadChallenges = async () => {
-    const response = await fetchChallenges();
-    setChallenges(response);
-  };
+  const [refreshing, setRefreshing] =
+    useState(false);
 
-  useEffect(() => {
-    loadChallenges();
-  }, []);
+  const [allChallenges, setAllChallenges] =
+    useState<any[]>([]);
 
-  const handleJoin = async (id: string) => {
+  const [myChallenges, setMyChallenges] =
+    useState<any[]>([]);
+
+  const loadData = async () => {
     try {
-      await joinChallenge(id);
-      Alert.alert('Joined', 'You have joined the challenge successfully.');
-      loadChallenges();
-    } catch (error: any) {
-      Alert.alert('Join failed', error?.message || 'Unable to join challenge.');
+      const [
+        challengesResponse,
+        joinedResponse,
+      ] = await Promise.all([
+        fetchChallenges(),
+        fetchMyChallenges(),
+      ]);
+
+    setAllChallenges(
+  challengesResponse?.challenges ||
+    challengesResponse ||
+    []
+);
+
+setMyChallenges(
+  joinedResponse?.challenges ||
+    joinedResponse ||
+    []
+);
+    } catch (error) {
+      console.log(error);
     }
   };
 
-  const handleComplete = async (id: string) => {
+  // IMPORTANT FIX
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [])
+  );
+
+  const onRefresh = async () => {
     try {
-      await completeChallenge(id);
-      Alert.alert('Completed', 'Challenge marked as completed.');
-      loadChallenges();
-    } catch (error: any) {
-      Alert.alert('Completion failed', error?.message || 'Unable to complete challenge.');
+      setRefreshing(true);
+
+      await loadData();
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleJoin = async (
+    id: string
+  ) => {
+    try {
+      await joinChallenge(id);
+
+      await loadData();
+    } catch (error) {
+      console.log(error);
     }
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-      <Text style={styles.heading}>Challenges</Text>
-      <Text style={styles.subheading}>Discover premium programs and active competitions.</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={
+        styles.content
+      }
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+      showsVerticalScrollIndicator={
+        false
+      }
+    >
+      <Text style={styles.heading}>
+        Challenges
+      </Text>
 
-      <View style={styles.gridRow}>
-        <Card style={styles.statCard}>
-          <Users size={20} color={Colors.primary} />
-          <Text style={styles.statValue}>{challenges.reduce((total, challenge) => total + challenge.participants, 0).toLocaleString()}</Text>
-          <Text style={styles.statLabel}>Participants</Text>
-        </Card>
-        <Card style={styles.statCard}>
-          <Flame size={20} color={Colors.secondary} />
-          <Text style={styles.statValue}>{challenges.length ? `${Math.round((challenges.filter((item) => item.status === 'Live').length / challenges.length) * 100)}%` : '0%'}</Text>
-          <Text style={styles.statLabel}>Live Challenges</Text>
-        </Card>
-      </View>
+      <Text style={styles.subheading}>
+        Stay consistent. Build streaks.
+        Unlock achievements.
+      </Text>
 
-      {challenges.map((challenge) => (
-        <Card key={challenge.id} style={styles.challengeCard}>
-          <Text style={styles.challengeStatus}>{challenge.status.toUpperCase()}</Text>
-          <Text style={styles.challengeTitle}>{challenge.title}</Text>
-          <Text style={styles.challengeDescription}>{challenge.description}</Text>
-          <View style={styles.footerRow}>
-            <View style={styles.detailColumn}>
-              <Text style={styles.detailLabel}>Participants</Text>
-              <Text style={styles.detailValue}>{challenge.participants.toLocaleString()}</Text>
-            </View>
-            <View style={styles.detailColumn}>
-              <Text style={styles.detailLabel}>Ends In</Text>
-              <Text style={styles.detailValue}>{challenge.endsInDays} days</Text>
-            </View>
+      {myChallenges.length > 0 ? (
+        <>
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Active Challenge
+          </Text>
+
+          <ChallengeHeroCard
+            challenge={
+              myChallenges[0]
+            }
+          />
+
+          <Text
+            style={
+              styles.sectionTitle
+            }
+          >
+            Continue Challenges
+          </Text>
+
+          {myChallenges.map(
+            (item) => (
+              <ActiveChallengeCard
+                key={item._id}
+                item={item}
+                onPress={() =>
+                  router.push(
+                    `/challenge/${item._id}`
+                  )
+                }
+              />
+            )
+          )}
+        </>
+      ) : (
+        <ChallengesEmptyState />
+      )}
+
+      <Text style={styles.sectionTitle}>
+        Discover Challenges
+      </Text>
+
+      {allChallenges.map((item) => {
+        const joined =
+          myChallenges.find(
+            (challenge) =>
+              challenge.challenge
+                ._id === item._id
+          );
+
+        return (
+          <View
+            key={item._id}
+            style={styles.challengeCard}
+          >
+            <ChallengeHeroCard
+              challenge={item}
+            />
+
+            {!joined ? (
+              <Button
+                style={
+                  styles.joinButton
+                }
+                onPress={() =>
+                  handleJoin(
+                    item._id
+                  )
+                }
+              >
+                Join Challenge
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                style={
+                  styles.joinButton
+                }
+                onPress={() =>
+                  router.push(
+                    `/challenge/${joined._id}`
+                  )
+                }
+              >
+                Continue Challenge
+              </Button>
+            )}
           </View>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${Math.min((challenge.progress / challenge.target) * 100, 100)}%`, backgroundColor: challenge.status === 'Live' ? Colors.primary : Colors.secondary }]} />
-          </View>
-          <View style={styles.actionRow}>
-            <Button style={styles.actionButton} onPress={() => handleJoin(challenge.id)}>
-              Join
-            </Button>
-            <Button variant="secondary" style={styles.actionButton} onPress={() => handleComplete(challenge.id)}>
-              Complete
-            </Button>
-          </View>
-        </Card>
-      ))}
+        );
+      })}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: {
-    padding: 24,
-    paddingBottom: 120,
-    gap: 18,
+  container: {
+    flex: 1,
+    backgroundColor:
+      Colors.background,
   },
+
+  content: {
+    padding: 20,
+    paddingBottom: 120,
+  },
+
   heading: {
     color: Colors.onSurface,
-    fontSize: 26,
+    fontSize: 34,
     fontWeight: '900',
+    marginBottom: 8,
   },
+
   subheading: {
     color: Colors.onSurfaceVariant,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 12,
+    fontSize: 15,
+    lineHeight: 24,
+    marginBottom: 28,
   },
-  gridRow: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 18,
-  },
-  statCard: {
-    flex: 1,
-    padding: 18,
-    alignItems: 'flex-start',
-  },
-  statValue: {
+
+  sectionTitle: {
     color: Colors.onSurface,
     fontSize: 24,
     fontWeight: '900',
-    marginTop: 12,
+    marginBottom: 18,
   },
-  statLabel: {
-    color: Colors.onSurfaceVariant,
-    fontSize: 12,
-    marginTop: 6,
-    textTransform: 'uppercase',
-  },
+
   challengeCard: {
-    padding: 20,
-    gap: 14,
+    marginBottom: 28,
   },
-  challengeStatus: {
-    color: Colors.primary,
-    fontSize: 10,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 1.5,
-  },
-  challengeTitle: {
-    color: Colors.onSurface,
-    fontSize: 20,
-    fontWeight: '900',
-  },
-  challengeDescription: {
-    color: Colors.onSurfaceVariant,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  detailColumn: {
-    gap: 4,
-  },
-  detailLabel: {
-    color: Colors.onSurfaceVariant,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
-  detailValue: {
-    color: Colors.onSurface,
-    fontSize: 16,
-    fontWeight: '800',
-  },
-  progressTrack: {
-    height: 10,
-    borderRadius: 999,
-    backgroundColor: Colors.border,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
+
+  joinButton: {
+    marginTop: 16,
+    marginHorizontal: 24,
+    marginBottom: 10,
+    borderRadius: 18,
   },
 });

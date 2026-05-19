@@ -1,5 +1,4 @@
 import React, {
-  useEffect,
   useState,
 } from 'react';
 
@@ -25,24 +24,18 @@ import { Colors } from '@/src/constants/theme';
 import { Button } from '@/src/components/ui/Button';
 
 import {
-  createWorkout,
-} from '@/src/services/api/workouts';
-
-import {
-  fetchExercises,
+  createExercise,
 } from '@/src/services/api/exercises';
 
 import {
   uploadMedia,
 } from '@/src/services/api/upload';
 
-import { ExercisePickerCard } from '@/src/components/workouts/ExercisePickerCard';
-
-export function AddWorkoutScreen() {
+export function AddExerciseScreen() {
   const [loading, setLoading] =
     useState(false);
 
-  const [title, setTitle] =
+  const [name, setName] =
     useState('');
 
   const [
@@ -50,11 +43,16 @@ export function AddWorkoutScreen() {
     setDescription,
   ] = useState('');
 
-  const [category, setCategory] =
-    useState('');
-
   const [duration, setDuration] =
     useState('');
+
+  const [restTime, setRestTime] =
+    useState('');
+
+  const [
+    targetMuscle,
+    setTargetMuscle,
+  ] = useState('');
 
   const [
     caloriesBurn,
@@ -62,44 +60,21 @@ export function AddWorkoutScreen() {
   ] = useState('');
 
   const [difficulty, setDifficulty] =
-    useState('Intermediate');
+    useState('Beginner');
+
+  const [
+    instructions,
+    setInstructions,
+  ] = useState('');
+
+  const [tips, setTips] =
+    useState('');
 
   const [image, setImage] =
     useState<any>(null);
 
-  const [
-    thumbnail,
-    setThumbnail,
-  ] = useState('');
-
-  const [
-    exercises,
-    setExercises,
-  ] = useState<any[]>([]);
-
-  const [
-    selectedExercises,
-    setSelectedExercises,
-  ] = useState<string[]>([]);
-
-  const loadExercises =
-    async () => {
-      try {
-        const response =
-          await fetchExercises();
-
-        setExercises(
-          response?.exercises ||
-            []
-        );
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-  useEffect(() => {
-    loadExercises();
-  }, []);
+  const [imageUrl, setImageUrl] =
+    useState('');
 
   const pickImage =
     async () => {
@@ -120,36 +95,15 @@ export function AddWorkoutScreen() {
       }
     };
 
-  const toggleExercise =
-    (id: string) => {
-      setSelectedExercises(
-        (prev) => {
-          if (
-            prev.includes(id)
-          ) {
-            return prev.filter(
-              (item) =>
-                item !== id
-            );
-          }
-
-          return [
-            ...prev,
-            id,
-          ];
-        }
-      );
-    };
-
   const handleSubmit =
     async () => {
       try {
         setLoading(true);
 
-        let uploadedThumbnail =
+        let uploadedImage =
           '';
 
-        // IMAGE UPLOAD
+        // UPLOAD IMAGE
         if (image) {
           const uploaded =
             await uploadMedia({
@@ -158,66 +112,74 @@ export function AddWorkoutScreen() {
               type: 'image/jpeg',
 
               name:
-                'workout.jpg',
+                'exercise.jpg',
             });
 
-          uploadedThumbnail =
+          uploadedImage =
             uploaded.url ||
             uploaded.secure_url;
 
-          setThumbnail(
-            uploadedThumbnail
+          setImageUrl(
+            uploadedImage
           );
         }
 
-        await createWorkout({
-          title,
+        await createExercise({
+          name,
           description,
-          category,
 
           duration:
             Number(duration),
+
+          restTime:
+            Number(restTime),
+
+          targetMuscle,
 
           caloriesBurn:
             Number(caloriesBurn),
 
           difficulty,
 
-          thumbnail:
-            uploadedThumbnail,
+          imageUrl:
+            uploadedImage,
 
-          exercises:
-            selectedExercises,
+          instructions:
+            instructions
+              .split(',')
+              .map((item) =>
+                item.trim()
+              ),
 
-          featured: true,
-
-          status:
-            'published',
+          tips: tips
+            .split(',')
+            .map((item) =>
+              item.trim()
+            ),
         });
 
         Alert.alert(
           'Success',
-          'Workout created successfully'
+          'Exercise created successfully'
         );
 
-        setTitle('');
+        setName('');
         setDescription('');
-        setCategory('');
         setDuration('');
+        setRestTime('');
+        setTargetMuscle('');
         setCaloriesBurn('');
-        setThumbnail('');
-        setSelectedExercises(
-          []
-        );
-
+        setInstructions('');
+        setTips('');
         setImage(null);
+        setImageUrl('');
       } catch (error: any) {
         console.log(error);
 
         Alert.alert(
           'Error',
           error?.message ||
-            'Unable to create workout'
+            'Unable to create exercise'
         );
       } finally {
         setLoading(false);
@@ -235,12 +197,12 @@ export function AddWorkoutScreen() {
       }
     >
       <Text style={styles.heading}>
-        Create Workout
+        Create Exercise
       </Text>
 
       <Text style={styles.subheading}>
-        Build premium guided fitness
-        programs for your users.
+        Build guided exercises for
+        workout sessions.
       </Text>
 
       <View style={styles.imageBox}>
@@ -282,17 +244,17 @@ export function AddWorkoutScreen() {
               styles.imageButtonText
             }
           >
-            Upload Thumbnail
+            Upload Exercise Image
           </Text>
         </Button>
       </View>
 
       <TextInput
-        placeholder="Workout Title"
+        placeholder="Exercise Name"
         placeholderTextColor="#777"
         style={styles.input}
-        value={title}
-        onChangeText={setTitle}
+        value={name}
+        onChangeText={setName}
       />
 
       <TextInput
@@ -310,23 +272,34 @@ export function AddWorkoutScreen() {
       />
 
       <TextInput
-        placeholder="Category"
-        placeholderTextColor="#777"
-        style={styles.input}
-        value={category}
-        onChangeText={
-          setCategory
-        }
-      />
-
-      <TextInput
-        placeholder="Duration (minutes)"
+        placeholder="Duration (seconds)"
         placeholderTextColor="#777"
         style={styles.input}
         keyboardType="numeric"
         value={duration}
         onChangeText={
           setDuration
+        }
+      />
+
+      <TextInput
+        placeholder="Rest Time (seconds)"
+        placeholderTextColor="#777"
+        style={styles.input}
+        keyboardType="numeric"
+        value={restTime}
+        onChangeText={
+          setRestTime
+        }
+      />
+
+      <TextInput
+        placeholder="Target Muscle"
+        placeholderTextColor="#777"
+        style={styles.input}
+        value={targetMuscle}
+        onChangeText={
+          setTargetMuscle
         }
       />
 
@@ -341,37 +314,38 @@ export function AddWorkoutScreen() {
         }
       />
 
-      <Text
-        style={
-          styles.exerciseTitle
+      <TextInput
+        placeholder="Instructions separated by comma"
+        placeholderTextColor="#777"
+        style={[
+          styles.input,
+          styles.textarea,
+        ]}
+        multiline
+        value={instructions}
+        onChangeText={
+          setInstructions
         }
-      >
-        Attach Exercises
-      </Text>
+      />
 
-      {exercises.map(
-        (exercise) => (
-          <ExercisePickerCard
-            key={exercise._id}
-            exercise={exercise}
-            selected={selectedExercises.includes(
-              exercise._id
-            )}
-            onPress={() =>
-              toggleExercise(
-                exercise._id
-              )
-            }
-          />
-        )
-      )}
+      <TextInput
+        placeholder="Tips separated by comma"
+        placeholderTextColor="#777"
+        style={[
+          styles.input,
+          styles.textarea,
+        ]}
+        multiline
+        value={tips}
+        onChangeText={setTips}
+      />
 
       <Button
         style={styles.submit}
         loading={loading}
         onPress={handleSubmit}
       >
-        Create Workout Program
+        Create Exercise
       </Button>
     </ScrollView>
   );
@@ -429,9 +403,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
 
     flexDirection: 'row',
-
     alignItems: 'center',
-
     justifyContent:
       'center',
 
@@ -440,7 +412,6 @@ const styles = StyleSheet.create({
 
   imageButtonText: {
     color: '#FFFFFF',
-
     fontWeight: '700',
   },
 
@@ -460,26 +431,11 @@ const styles = StyleSheet.create({
 
   textarea: {
     minHeight: 120,
-
-    textAlignVertical:
-      'top',
-  },
-
-  exerciseTitle: {
-    color: Colors.onSurface,
-
-    fontSize: 24,
-
-    fontWeight: '900',
-
-    marginBottom: 20,
-
-    marginTop: 10,
+    textAlignVertical: 'top',
   },
 
   submit: {
-    marginTop: 20,
-
+    marginTop: 14,
     borderRadius: 22,
   },
 });

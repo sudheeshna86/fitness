@@ -21,16 +21,40 @@ export interface Movement {
 }
 
 export interface Challenge {
-  id: string;
+  _id: string;
+
   title: string;
+
   description: string;
-  progress: number;
-  target: number;
-  unit: string;
-  status: 'Live' | 'Draft' | 'Ended';
-  participants: number;
-  endsInDays: number;
-  image?: string;
+
+  imageUrl: string;
+
+  category:
+    | 'Workout'
+    | 'Water'
+    | 'Sleep'
+    | 'Weight Loss'
+    | 'Strength';
+
+  difficulty:
+    | 'Easy'
+    | 'Medium'
+    | 'Hard';
+
+  reward: string;
+
+  duration: number;
+
+  targetDays: number;
+
+  xpReward: number;
+
+  participantsCount: number;
+
+  status:
+    | 'Live'
+    | 'Draft'
+    | 'Completed';
 }
 
 export interface Badge {
@@ -80,4 +104,24 @@ export interface AnalyticsData {
   weeklyEngagement: { name: string; engagement: number }[];
   userGrowth: { date: string; users: number }[];
   topExercises: { name: string; count: number; color: string }[];
+}
+
+
+
+export interface UserChallenge {
+  _id: string;
+
+  challenge: Challenge;
+
+  progress: number;
+
+  streak: number;
+
+  currentDay: number;
+
+  completedDays: number[];
+
+  status:
+    | 'active'
+    | 'completed';
 }

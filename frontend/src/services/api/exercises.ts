@@ -1,65 +1,55 @@
 import { axiosInstance } from './axios';
 
-export const fetchWorkouts =
+export const fetchExercises =
   async () => {
     const response =
       await axiosInstance.get(
-        '/workouts'
+        '/exercises'
       );
 
     return response.data;
   };
 
-export const fetchWorkoutById =
+export const fetchExerciseById =
   async (id: string) => {
     const response =
       await axiosInstance.get(
-        `/workouts/${id}`
+        `/exercises/${id}`
       );
 
     return response.data;
   };
 
-export const createWorkout =
+export const createExercise =
   async (payload: any) => {
     const response =
       await axiosInstance.post(
-        '/workouts',
+        '/exercises',
         payload
       );
 
     return response.data;
   };
 
-export const updateWorkout =
+export const updateExercise =
   async (
     id: string,
     payload: any
   ) => {
     const response =
       await axiosInstance.put(
-        `/workouts/${id}`,
+        `/exercises/${id}`,
         payload
       );
 
     return response.data;
   };
 
-export const deleteWorkout =
+export const deleteExercise =
   async (id: string) => {
     const response =
       await axiosInstance.delete(
-        `/workouts/${id}`
-      );
-
-    return response.data;
-  };
-
-export const completeWorkout =
-  async (id: string) => {
-    const response =
-      await axiosInstance.post(
-        `/workouts/${id}/complete`
+        `/exercises/${id}`
       );
 
     return response.data;
