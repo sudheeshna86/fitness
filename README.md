@@ -47,7 +47,7 @@ It empowers users to track workouts, hydration, sleep, and challenges, with anal
 
 ---
 
-## 📁 Folder Structure
+##  Folder Structure
 
 ```
 fitness/
@@ -80,7 +80,7 @@ fitness/
 ## Tech Stack
 
 - **Frontend:** React Native (Expo), TypeScript, React Navigation, Axios
-- **Backend:** Node.js, Express.js, MongoDB, Mongoose, JWT, bcrypt
+- **Backend:** Node.js, Express.js, MongoDB, Mongoose, JWT, bcrypt,Cloudinary
 - **Other:** AsyncStorage/SecureStore, REST APIs, Git & GitHub
 
 ---
@@ -245,9 +245,8 @@ MIT License – Feel free to use this project for learning and development.
 
 ---
 
-## Author
 
-**Chandu** – Full Stack Developer
+
 
 ---
 
