@@ -189,8 +189,27 @@ const completeWorkout =
     if (user) {
       user.workoutsCompleted += 1;
 
+      if (
+        user.workoutsCompleted % 5 ===
+        0
+      ) {
+        user.streak += 1;
+      }
+
       await user.save();
     }
+
+    await WorkoutHistory.create({
+      user: req.user._id,
+
+      workout: workout._id,
+
+      caloriesBurned:
+        workout.caloriesBurn,
+
+      duration:
+        workout.duration,
+    });
 
     res.json({
       success: true,

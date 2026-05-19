@@ -16,7 +16,9 @@
     "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.4.1",
-    "multer": "^2.1.1"
+    "multer": "^2.1.1",
+    "react-native-chart-kit": "^6.12.2",
+    "react-native-svg": "^15.15.5"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
