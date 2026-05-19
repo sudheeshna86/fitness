@@ -1,8 +1,15 @@
+
 # Fitness App – Full Stack (MERN + Expo)
 
 This is a **production-ready full-stack fitness application** with a robust **backend (Node.js, Express, MongoDB)** and a modern **mobile frontend (React Native, Expo, TypeScript)**.
 
 It empowers users to track workouts, hydration, sleep, and challenges, with analytics, admin features, and secure authentication.
+
+---
+
+## 📺 Screen Recording Demo
+
+[Screen Recording Demo (Google Drive)](https://drive.google.com/file/d/10UaxyakhqMtZ4KWxkanqmnTXvShE4NOd/view?usp=drivesdk)
 
 ---
 
