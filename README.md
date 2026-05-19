@@ -11,6 +11,12 @@ It empowers users to track workouts, hydration, sleep, and challenges, with anal
 
 [Screen Recording Demo (Google Drive)](https://drive.google.com/file/d/10UaxyakhqMtZ4KWxkanqmnTXvShE4NOd/view?usp=drivesdk)
 
+
+
+https://github.com/user-attachments/assets/e12fdd75-2768-4f7a-a7d3-0833de9702fd
+
+
+
 ---
 
 ## Features
