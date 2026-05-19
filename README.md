@@ -13,7 +13,11 @@ It empowers users to track workouts, hydration, sleep, and challenges, with anal
 
 
 
-https://github.com/user-attachments/assets/e12fdd75-2768-4f7a-a7d3-0833de9702fd
+
+
+https://github.com/user-attachments/assets/6ef73ab5-fd26-4c5d-98bb-1f18c3bd2d64
+
+
 
 
 
