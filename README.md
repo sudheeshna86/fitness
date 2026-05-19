@@ -1,8 +1,8 @@
-# Fitness App – Frontend
+# Fitness App – Full Stack (MERN + Expo)
 
-This is the **frontend application** for the **Fitness Tracking Platform**, built using **React Native (Expo)** and **TypeScript**.
+This is a **production-ready full-stack fitness application** with a robust **backend (Node.js, Express, MongoDB)** and a modern **mobile frontend (React Native, Expo, TypeScript)**.
 
-It provides a user-friendly interface for users to track workouts, hydration, sleep, and participate in challenges, with analytics and admin features.
+It empowers users to track workouts, hydration, sleep, and challenges, with analytics, admin features, and secure authentication.
 
 ---
 
@@ -10,19 +10,18 @@ It provides a user-friendly interface for users to track workouts, hydration, sl
 
 ### **Authentication**
 - User registration and login with JWT tokens
-- Persistent authentication using secure storage
-- Protected screens accessible only to logged-in users
-- Auto-redirect logged-in users to dashboard
+- Persistent authentication (secure storage/localStorage)
+- Protected routes/screens for logged-in users
+- Role-based access (User/Admin)
 
 ### **Workout & Activity Tracking**
-- Log workouts with details and completion status
+- Log, edit, and complete workouts
 - Track hydration and water intake
 - Record sleep patterns and duration
-- View workout history and analytics
+- View workout and activity history
 
 ### **Challenges**
-- Browse and join fitness challenges
-- Track challenge progress and completion
+- Browse, join, and track fitness challenges
 - Admin can create and manage challenges
 
 ### **Analytics & Dashboard**
@@ -30,129 +29,108 @@ It provides a user-friendly interface for users to track workouts, hydration, sl
 - Progress charts and summaries
 - Personalized dashboard for each user
 
+### **Admin Features**
+- Manage users, workouts, and challenges
+- View platform analytics
+
 ### **User Interface**
-- Responsive design for mobile devices
-- Modern, clean UI with theming support
-- Tab navigation for quick access to features
+- Responsive mobile UI (Expo/React Native)
+- Modern, clean design with theming
+- Tab navigation and intuitive flows
 
 ---
 
 ## 📁 Folder Structure
 
 ```
-frontend/
-├── app/                    # Main app screens and navigation
-│   ├── (tabs)/             # Tabbed navigation screens
-│   ├── admin/              # Admin management screens
-│   ├── challenge/          # Challenge details
-│   ├── exercise/           # Exercise details
-│   ├── workout/            # Workout details
-│   └── ...                 # Other screens
-├── assets/                 # Images and static assets
-├── components/             # Reusable UI components
-├── constants/              # Theme and config
-├── hooks/                  # Custom React hooks
-├── src/
-│   ├── components/         # Additional components
-│   ├── constants/          # Constants
-│   ├── context/            # Context providers
-│   ├── data/               # Static data
-│   ├── hooks/              # Custom hooks
-│   ├── screens/            # Main screens (e.g., DashboardScreen.tsx)
-│   ├── services/           # API and business logic
-│   └── utils/              # Utility functions
-├── package.json            # Dependencies
-├── tsconfig.json           # TypeScript config
-├── app.json                # Expo config
-└── README.md               # This file
+fitness/
+├── backend/                  # Node.js, Express, MongoDB backend
+│   ├── src/
+│   │   ├── controllers/      # Route controllers
+│   │   ├── middleware/       # Auth & error middleware
+│   │   ├── models/           # Mongoose models
+│   │   ├── routes/           # API routes
+│   │   ├── services/         # Business logic
+│   │   ├── utils/            # Utility functions
+│   │   └── ...
+│   ├── uploads/              # Uploaded files
+│   ├── package.json          # Backend dependencies
+│   └── ...
+├── frontend/                 # Expo React Native frontend
+│   ├── app/                  # Main app screens & navigation
+│   ├── assets/               # Images and static assets
+│   ├── components/           # Reusable UI components
+│   ├── constants/            # Theme and config
+│   ├── hooks/                # Custom React hooks
+│   ├── src/                  # Additional logic, screens, services
+│   ├── package.json          # Frontend dependencies
+│   └── ...
+└── README.md                 # This file
 ```
 
 ---
 
 ## Tech Stack
 
-- **React Native (Expo)** – Cross-platform mobile app
-- **TypeScript** – Type safety
-- **React Navigation** – Navigation and routing
-- **Axios** – HTTP requests and API communication
-- **JWT** – Token-based authentication
-- **AsyncStorage/SecureStore** – Client-side data persistence
+- **Frontend:** React Native (Expo), TypeScript, React Navigation, Axios
+- **Backend:** Node.js, Express.js, MongoDB, Mongoose, JWT, bcrypt
+- **Other:** AsyncStorage/SecureStore, REST APIs, Git & GitHub
 
 ---
 
 ## Pages & Modules
 
-### **Authentication**
-- Register and login screens
-- JWT token storage and auto-login
-- Role-based access (user/admin)
+### **Frontend (Mobile App)**
+- **Authentication:** Register, login, JWT storage, role-based access
+- **Dashboard:** Overview of workouts, hydration, sleep, challenges
+- **Workouts:** View, add, edit, complete, and history
+- **Challenges:** Browse, join, track, and admin management
+- **Hydration & Sleep:** Log and view analytics
+- **Profile:** Edit user details
+- **Admin:** Manage users, workouts, challenges
 
-### **Dashboard**
-- Overview of workouts, hydration, sleep, and challenges
-- Quick access to active challenges and stats
-
-### **Workouts**
-- View, add, edit, and complete workouts
-- Workout detail and history screens
-
-### **Challenges**
-- Browse, join, and track challenges
-- Admin screens for challenge management
-
-### **Hydration & Sleep**
-- Log water intake and sleep duration
-- View analytics and progress
-
-### **Profile & Settings**
-- Edit profile details
-- Manage account settings
+### **Backend (API Server)**
+- **Auth:** Register, login, JWT, role-based middleware
+- **Users:** CRUD, profile, admin management
+- **Workouts:** CRUD, completion, analytics
+- **Challenges:** CRUD, join, complete, analytics
+- **Hydration/Sleep:** Log and retrieve data
+- **Analytics:** User and platform stats
 
 ---
 
 ## Environment Setup
 
-Create a `.env` file in the `frontend` directory:
+### Backend
+1. Copy `.env.example` to `.env` and set your variables (MongoDB URI, JWT secret, etc.)
+2. Install dependencies:
+	```bash
+	cd backend
+	npm install
+	```
+3. Start the backend:
+	```bash
+	npm run dev
+	```
 
-```env
-EXPO_PUBLIC_API_URL=http://localhost:5000/api
-```
-
-For production:
-
-```env
-EXPO_PUBLIC_API_URL=https://your-backend-url/api
-```
-
----
-
-## Installation & Running
-
-### Prerequisites
-- Node.js v16+ and npm
-- Expo CLI (`npm install -g expo-cli`)
-
-### Install Dependencies
-```bash
-cd frontend
-npm install
-```
-
-### Run Development Server
-```bash
-npx expo start
-```
-The app will run on your device or emulator via Expo Go.
-
-### Build for Production
-```bash
-eas build
-```
+### Frontend
+1. Create a `.env` file in `frontend`:
+	```env
+	EXPO_PUBLIC_API_URL=http://localhost:5000/api
+	```
+2. Install dependencies:
+	```bash
+	cd frontend
+	npm install
+	```
+3. Start the app:
+	```bash
+	npx expo start
+	```
 
 ---
 
-## 🔗 API Integration
-
-The frontend connects to the backend API with the following main endpoints:
+## 🔗 API Endpoints (Backend)
 
 ### **Authentication**
 - `POST /api/auth/register` – Register new user
@@ -199,52 +177,48 @@ The frontend connects to the backend API with the following main endpoints:
 5. **Log Hydration/Sleep** – Record daily water and sleep
 6. **View Analytics** – See progress and stats
 7. **Profile Management** – Edit user details
+8. **Admin Management** – (Admin only) manage users, workouts, challenges
 
 ---
 
-## Design Features
+## Design & Security Features
 
 - **Mobile-First UI** – Optimized for all devices
 - **Theming** – Light/dark mode support
 - **Tab Navigation** – Easy access to main features
 - **Loading States** – Spinners and feedback for better UX
 - **Icons & Graphics** – Visual cues for activities
-
----
-
-## Security Features
-
-- JWT token-based authentication
-- Protected routes/screens
-- Secure token storage
-- Role-based access control (User/Admin)
+- **JWT token-based authentication**
+- **Protected routes/screens**
+- **Role-based access control (User/Admin)**
+- **Secure token storage**
 
 ---
 
 ## Deployment
 
-### Deploy to Expo
-```bash
-eas build --platform android
-eas build --platform ios
-```
+### Backend
+- Deploy to platforms like Render, Heroku, or your own server
+- Set environment variables for production
 
-Update `EXPO_PUBLIC_API_URL` in `.env` to your production backend URL before deployment.
+### Frontend
+- Deploy with Expo (EAS build for Android/iOS)
+- Update `EXPO_PUBLIC_API_URL` in `.env` to your production backend URL
 
 ---
 
 ## Troubleshooting
 
-### Issue: "Failed to fetch" API errors
+### "Failed to fetch" API errors
 - Check if backend is running and accessible
-- Verify `EXPO_PUBLIC_API_URL` in `.env` matches your backend URL
+- Verify API URL in frontend `.env` matches backend
 - Check device/emulator network settings
 
-### Issue: User not logged in after app restart
+### User not logged in after app restart
 - Verify JWT token is saved in SecureStore/AsyncStorage
 - Try logging in again
 
-### Issue: Data not updating
+### Data not updating
 - Check API responses and backend logs
 - Ensure correct API endpoints are used
 
