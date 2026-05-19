@@ -16,7 +16,7 @@ const challengeRoutes = require('./routes/challengeRoutes');
 const waterRoutes = require('./routes/waterRoutes');
 const sleepRoutes = require('./routes/sleepRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
-
+const exerciseRoutes = require('./routes/exerciseRoutes');
 connectDB();
 
 const app = express();
@@ -38,7 +38,7 @@ app.use('/api/challenges', challengeRoutes);
 app.use('/api/water', waterRoutes);
 app.use('/api/sleep', sleepRoutes);
 app.use('/api/analytics', analyticsRoutes);
-
+app.use('/api/exercises', exerciseRoutes);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 4000;

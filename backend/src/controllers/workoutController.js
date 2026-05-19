@@ -1,108 +1,209 @@
-const asyncHandler = require('express-async-handler');
-const Workout = require('../models/Workout');
-const User = require('../models/User');
-const { validateWorkoutPayload } = require('../validations/validators');
+const asyncHandler = require(
+  'express-async-handler'
+);
 
-const getWorkouts = asyncHandler(async (req, res) => {
-  const workouts = await Workout.find().populate('createdBy', 'name email');
-  res.json(workouts);
-});
+const Workout = require(
+  '../models/Workout'
+);
 
-const createWorkout = asyncHandler(async (req, res) => {
-  console.log('createWorkout - req.user:', req.user ? { id: req.user._id, role: req.user.role } : null);
-  if (!req.user) {
-    res.status(401);
-    throw new Error('Authentication required to create a workout');
-  }
-  validateWorkoutPayload(req.body);
-  const { title, description, category, duration, caloriesBurn, difficulty, exercises, thumbnail, status } = req.body;
-  const workout = await Workout.create({
-    title,
-    description,
-    category,
-    duration,
-    caloriesBurn,
-    difficulty,
-    exercises: exercises || [],
-    thumbnail: thumbnail || '',
-    createdBy: req.user._id,
-    status: status || 'published',
+const User = require(
+  '../models/User'
+);
+const WorkoutHistory = require(
+  '../models/WorkoutHistory'
+);
+const getWorkouts =
+  asyncHandler(async (req, res) => {
+    const workouts =
+      await Workout.find()
+        .populate(
+          'createdBy',
+          'name email'
+        )
+        .populate('exercises')
+        .sort({
+          createdAt: -1,
+        });
+
+    res.json({
+      success: true,
+      workouts,
+    });
   });
 
-  res.status(201).json(workout);
-});
+const getWorkoutById =
+  asyncHandler(async (req, res) => {
+    const workout =
+      await Workout.findById(
+        req.params.id
+      )
+        .populate(
+          'createdBy',
+          'name email'
+        )
+        .populate('exercises');
 
-const updateWorkout = asyncHandler(async (req, res) => {
-  const workout = await Workout.findById(req.params.id);
-  if (!workout) {
-    res.status(404);
-    throw new Error('Workout not found');
-  }
+    if (!workout) {
+      res.status(404);
 
-  if (req.user.role !== 'admin' && workout.createdBy.toString() !== req.user._id.toString()) {
-    res.status(403);
-    throw new Error('Not authorized to update this workout');
-  }
+      throw new Error(
+        'Workout not found'
+      );
+    }
 
-  const { title, description, category, duration, caloriesBurn, difficulty, exercises, thumbnail, status } = req.body;
-  if (title) workout.title = title;
-  if (description) workout.description = description;
-  if (category) workout.category = category;
-  if (duration !== undefined) workout.duration = duration;
-  if (caloriesBurn !== undefined) workout.caloriesBurn = caloriesBurn;
-  if (difficulty) workout.difficulty = difficulty;
-  if (exercises) workout.exercises = exercises;
-  if (thumbnail) workout.thumbnail = thumbnail;
-  if (status) workout.status = status;
+    res.json({
+      success: true,
+      workout,
+    });
+  });
 
-  const updatedWorkout = await workout.save();
-  res.json(updatedWorkout);
-});
+const createWorkout =
+  asyncHandler(async (req, res) => {
+    const {
+      title,
+      description,
+      category,
+      duration,
+      caloriesBurn,
+      difficulty,
+      thumbnail,
+      equipment,
+      benefits,
+      tags,
+      featured,
+      exercises,
+      status,
+    } = req.body;
 
-const deleteWorkout = asyncHandler(async (req, res) => {
-  const workout = await Workout.findById(req.params.id);
-  if (!workout) {
-    res.status(404);
-    throw new Error('Workout not found');
-  }
+    const workout =
+      await Workout.create({
+        title,
+        description,
+        category,
+        duration,
+        caloriesBurn,
+        difficulty,
+        thumbnail,
+        equipment,
+        benefits,
+        tags,
+        featured,
+        exercises,
+        createdBy: req.user._id,
+        status,
+      });
 
-  if (req.user.role !== 'admin' && workout.createdBy.toString() !== req.user._id.toString()) {
-    res.status(403);
-    throw new Error('Not authorized to delete this workout');
-  }
+    const populatedWorkout =
+      await Workout.findById(
+        workout._id
+      ).populate('exercises');
 
-  await workout.remove();
-  res.json({ message: 'Workout deleted successfully' });
-});
+    res.status(201).json({
+      success: true,
+      workout: populatedWorkout,
+    });
+  });
 
-const getWorkoutById = asyncHandler(async (req, res) => {
-  const workout = await Workout.findById(req.params.id).populate('createdBy', 'name email');
-  if (!workout) {
-    res.status(404);
-    throw new Error('Workout not found');
-  }
-  res.json(workout);
-});
+const updateWorkout =
+  asyncHandler(async (req, res) => {
+    const workout =
+      await Workout.findById(
+        req.params.id
+      );
 
-const completeWorkout = asyncHandler(async (req, res) => {
-  const workout = await Workout.findById(req.params.id);
-  if (!workout) {
-    res.status(404);
-    throw new Error('Workout not found');
-  }
+    if (!workout) {
+      res.status(404);
 
-  if (!workout.completedBy.includes(req.user._id)) {
-    workout.completedBy.push(req.user._id);
-    await workout.save();
-  }
+      throw new Error(
+        'Workout not found'
+      );
+    }
 
-  const user = await User.findById(req.user._id);
-  if (user) {
-    user.workoutsCompleted += 1;
-    await user.save();
-  }
+    Object.assign(workout, req.body);
 
-  res.json({ message: 'Workout marked as completed', completedBy: workout.completedBy.length });
-});
+    const updatedWorkout =
+      await workout.save();
 
-module.exports = { getWorkouts, getWorkoutById, createWorkout, updateWorkout, deleteWorkout, completeWorkout };
+    res.json({
+      success: true,
+      workout: updatedWorkout,
+    });
+  });
+
+const deleteWorkout =
+  asyncHandler(async (req, res) => {
+    const workout =
+      await Workout.findById(
+        req.params.id
+      );
+
+    if (!workout) {
+      res.status(404);
+
+      throw new Error(
+        'Workout not found'
+      );
+    }
+
+    await workout.deleteOne();
+
+    res.json({
+      success: true,
+      message:
+        'Workout deleted successfully',
+    });
+  });
+
+const completeWorkout =
+  asyncHandler(async (req, res) => {
+    const workout =
+      await Workout.findById(
+        req.params.id
+      );
+
+    if (!workout) {
+      res.status(404);
+
+      throw new Error(
+        'Workout not found'
+      );
+    }
+
+    if (
+      !workout.completedBy.includes(
+        req.user._id
+      )
+    ) {
+      workout.completedBy.push(
+        req.user._id
+      );
+
+      await workout.save();
+    }
+
+    const user =
+      await User.findById(
+        req.user._id
+      );
+
+    if (user) {
+      user.workoutsCompleted += 1;
+
+      await user.save();
+    }
+
+    res.json({
+      success: true,
+      message:
+        'Workout completed successfully',
+    });
+  });
+
+module.exports = {
+  getWorkouts,
+  getWorkoutById,
+  createWorkout,
+  updateWorkout,
+  deleteWorkout,
+  completeWorkout,
+};

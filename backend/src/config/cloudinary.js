@@ -1,4 +1,4 @@
-const cloudinary = require('cloudinary').v2;
+  const cloudinary = require('cloudinary').v2;
 
 console.log('Loading Cloudinary config...');
 console.log('CLOUDINARY_CLOUD_NAME:', process.env.CLOUDINARY_CLOUD_NAME || '(not set)');
